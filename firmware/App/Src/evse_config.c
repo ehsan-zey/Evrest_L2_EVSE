@@ -7,6 +7,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,9 +130,11 @@ void cfg_load_defaults(evse_config_t *cfg)
 /** Which physical copy we most recently loaded from, so we write the other. */
 static uint32_t s_active_addr;
 
+/* uintptr_t rather than a direct cast so this is also clean when built for the
+ * host compile-check, where pointers are wider than the flash address. */
 static const evse_config_t *cfg_at(uint32_t addr)
 {
-    return (const evse_config_t *)addr;
+    return (const evse_config_t *)(uintptr_t)addr;
 }
 
 static bool flash_erase_sector(uint32_t addr)
@@ -172,7 +175,7 @@ static bool flash_write_config(uint32_t addr, const evse_config_t *c)
     }
     HAL_FLASH_Lock();
 
-    return ok && memcmp((const void *)addr, c, sizeof(*c)) == 0;
+    return ok && memcmp((const void *)(uintptr_t)addr, c, sizeof(*c)) == 0;
 }
 
 void cfg_init(void)

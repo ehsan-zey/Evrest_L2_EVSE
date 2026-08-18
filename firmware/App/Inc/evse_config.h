@@ -13,6 +13,7 @@
 #include "evse_types.h"
 #include "safety.h"
 #include "proximity.h"
+#include <stddef.h>
 
 #define CFG_MAGIC             0x45565231UL   /* "EVR1" */
 #define CFG_VERSION           1u

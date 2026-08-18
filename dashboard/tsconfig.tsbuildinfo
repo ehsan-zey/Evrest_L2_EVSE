@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/BarChart.tsx","./src/components/LineChart.tsx","./src/components/StatusBadge.tsx","./src/lib/api.ts","./src/lib/format.ts","./src/lib/live.ts","./src/lib/scale.ts","./src/pages/ChargerDetail.tsx","./src/pages/Login.tsx","./src/pages/Overview.tsx","./src/pages/Tags.tsx","./src/pages/Transactions.tsx"],"version":"5.9.3"}

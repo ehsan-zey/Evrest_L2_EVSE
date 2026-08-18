@@ -5,6 +5,7 @@
 #include "cp_pilot.h"
 #include "evse_board.h"
 #include <string.h>
+#include <stdint.h>
 
 #ifndef EVSE_HOST_TEST
 #include "FreeRTOS.h"
@@ -81,13 +82,23 @@ void cp_pilot_set_calibration(int32_t num, int32_t den, int32_t offset_mv)
 
 int32_t cp_adc_to_mv(uint16_t adc_raw)
 {
-    /* ADC code -> millivolts at the pin, then undo the CP front-end affine. */
-    int32_t adc_mv = ((int32_t)adc_raw * 3300) / 4095;
-    return (adc_mv * s_cal_num) / s_cal_den - s_cal_offset;
+    /*
+     * ADC code -> millivolts at the pin -> CP volts, in one expression.
+     *
+     * Converting to millivolts first and scaling afterwards truncates twice:
+     * the reference is 3300 mV over 4095 codes, so an intermediate in whole
+     * millivolts quantises to 0.8 mV per code and adjacent codes collapse onto
+     * the same value before the ~5.3x front-end gain is applied. Folding both
+     * steps into a single 64-bit ratio keeps one ADC code worth about 4.3 mV
+     * of CP voltage, which is what the median filter needs to resolve.
+     */
+    int64_t numer = (int64_t)adc_raw * 3300 * s_cal_num;
+    int64_t denom = (int64_t)4095 * s_cal_den;
+    return (int32_t)(numer / denom) - s_cal_offset;
 }
 
 /** In-place insertion sort median. CP_SAMPLE_DEPTH is small; this is fine. */
-static uint16_t median_u16(uint16_t *buf, size_t n)
+uint16_t cp_median_u16(uint16_t *buf, size_t n)
 {
     for (size_t i = 1; i < n; i++) {
         uint16_t key = buf[i];
@@ -287,8 +298,8 @@ void cp_pilot_update(void)
      */
     __HAL_TIM_MOE_ENABLE(&htim1);
 
-    int32_t v_hi = cp_adc_to_mv(median_u16(hi_copy, CP_SAMPLE_DEPTH));
-    int32_t v_lo = cp_adc_to_mv(median_u16(lo_copy, CP_SAMPLE_DEPTH));
+    int32_t v_hi = cp_adc_to_mv(cp_median_u16(hi_copy, CP_SAMPLE_DEPTH));
+    int32_t v_lo = cp_adc_to_mv(cp_median_u16(lo_copy, CP_SAMPLE_DEPTH));
 
     cp_state_t decoded = cp_decode_state(v_hi);
 

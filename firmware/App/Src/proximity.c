@@ -9,16 +9,21 @@
 
 /**
  * Type 2 coding resistors and the ratings they declare, per IEC 62196-2.
- * Tolerance is generous because the cable resistor, the pull-up and the ADC all
- * contribute; the bands below are wide enough not to overlap.
+ *
+ * Bands allow for the cable resistor tolerance, the pull-up tolerance and ADC
+ * error — roughly +/-50 % around nominal — but deliberately leave GAPS between
+ * them. A resistance landing in a gap is reported as "present, rating unknown"
+ * and falls back to the 6 A minimum. Contiguous bands would instead round a
+ * damaged or counterfeit cable up to the next rating, which is the one
+ * direction this must not fail in.
  */
 typedef struct { uint32_t nominal; uint32_t lo; uint32_t hi; float amps; } pp_code_t;
 
 static const pp_code_t PP_TYPE2_CODES[] = {
-    { 1500u, 1000u, 2200u, 13.0f },
-    {  680u,  480u,  999u, 20.0f },
-    {  220u,  150u,  479u, 32.0f },
-    {  100u,   50u,  149u, 63.0f },
+    { 1500u, 1100u, 2200u, 13.0f },   /* gap 1001..1099 */
+    {  680u,  500u, 1000u, 20.0f },   /* gap  331..499  */
+    {  220u,  160u,  330u, 32.0f },   /* gap  151..159  */
+    {  100u,   75u,  150u, 63.0f },
 };
 
 /* Type 1 latch network. */
@@ -29,9 +34,6 @@ static const pp_code_t PP_TYPE2_CODES[] = {
 
 /** Above this the PP line is open — no cable in the socket. */
 #define PP_OPEN_THRESHOLD_OHMS  10000u
-
-static connector_type_t s_type;
-static pp_status_t      s_status;
 
 uint32_t pp_adc_to_ohms(uint16_t adc_raw)
 {
@@ -104,6 +106,11 @@ void pp_decode(uint32_t ohms, connector_type_t type, pp_status_t *out)
     }
 }
 
+#ifndef EVSE_HOST_TEST
+
+static connector_type_t s_type;
+static pp_status_t      s_status;
+
 void proximity_init(connector_type_t type)
 {
     s_type = type;
@@ -134,3 +141,5 @@ float proximity_current_limit(void)
     }
     return s_status.cable_rating_a;
 }
+
+#endif /* !EVSE_HOST_TEST */

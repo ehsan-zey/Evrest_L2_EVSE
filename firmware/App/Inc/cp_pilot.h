@@ -26,6 +26,7 @@
 #define CP_PILOT_H
 
 #include "evse_types.h"
+#include <stddef.h>
 
 /** Periods of history median-filtered before decoding. 16 ms of pilot. */
 #define CP_SAMPLE_DEPTH        16u
@@ -83,6 +84,13 @@ float cp_current_for_duty(float duty_pct);
 
 /** True if @p duty encodes the 5 % "digital communication only" request. */
 bool cp_duty_is_digital_comm(float duty_pct);
+
+/**
+ * Median of @p n samples. Sorts @p buf in place, so pass a scratch copy.
+ * This is what rejects switching transients from the plateau readings — a
+ * mean would let a single spike drag the decoded state across a boundary.
+ */
+uint16_t cp_median_u16(uint16_t *buf, size_t n);
 
 /**
  * Convert a raw ADC reading to CP millivolts using the front-end calibration.

@@ -4,6 +4,7 @@
  */
 #include "safety.h"
 #include "relay.h"
+#include "meter.h"
 #include "evse_board.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -306,6 +307,21 @@ void safety_update(const meter_reading_t *meter, float offered_a, bool charging)
         fault_clr(EVSE_FAULT_OVER_TEMP);
     }
 #endif
+
+    /* --- ATM90E26 sag interrupt ----------------------------------------- */
+    /*
+     * The metering IC raises IRQ on voltage sag. That is a genuinely fast
+     * indication that the supply cannot hold up the load — faster than the
+     * 2 s sustained under-voltage test below — so it trips immediately.
+     *
+     * Note that sag and reverse-energy are the ONLY interrupt sources the
+     * ATM90E26 has. It has no programmable over-current threshold, so the
+     * over-current test further down is not a backstop, it is the whole of the
+     * over-current protection. See docs/METERING.md.
+     */
+    if (meter_take_sag_event()) {
+        fault_raise(EVSE_FAULT_UNDER_VOLTAGE);
+    }
 
     /* --- Metering-derived checks ---------------------------------------- */
     if (meter == NULL || !meter->valid) {

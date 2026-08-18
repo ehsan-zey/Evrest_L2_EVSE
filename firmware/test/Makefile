@@ -5,16 +5,26 @@ CFLAGS  := -std=c11 -Wall -Wextra -Wno-unused-parameter -O1 -g \
            -I../App/Inc -Istubs
 LDLIBS  := -lm
 
-SRCS := test_pilot.c ../App/Src/cp_pilot.c ../App/Src/proximity.c stubs/stubs.c
+PILOT_SRCS := test_pilot.c ../App/Src/cp_pilot.c ../App/Src/proximity.c stubs/stubs.c
+JSON_SRCS  := test_json.c ../App/Src/json.c
+TIME_SRCS  := test_time.c ../App/Src/rtc_time.c
+
+BINS := test_pilot test_json test_time
 
 .PHONY: all run clean
-all: test_pilot
+all: $(BINS)
 
-test_pilot: $(SRCS)
-	$(CC) $(CFLAGS) -o $@ $(SRCS) $(LDLIBS)
+test_pilot: $(PILOT_SRCS)
+	$(CC) $(CFLAGS) -o $@ $(PILOT_SRCS) $(LDLIBS)
 
-run: test_pilot
-	./test_pilot
+test_json: $(JSON_SRCS)
+	$(CC) $(CFLAGS) -o $@ $(JSON_SRCS) $(LDLIBS)
+
+test_time: $(TIME_SRCS)
+	$(CC) $(CFLAGS) -o $@ $(TIME_SRCS) $(LDLIBS)
+
+run: $(BINS)
+	@fail=0; for t in $(BINS); do ./$$t || fail=1; echo; done; exit $$fail
 
 clean:
-	rm -f test_pilot
+	rm -f $(BINS)

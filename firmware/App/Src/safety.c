@@ -100,6 +100,20 @@ void safety_estop_isr(void)
     s_faults |= EVSE_FAULT_ESTOP;
 }
 
+void safety_pen_isr(void)
+{
+    /*
+     * Open PEN puts exposed metalwork at line potential. The contactor is
+     * opened by the EXTI dispatcher before this is called; here we only record
+     * it, and only when the installation is one where the check applies —
+     * on TN-S or split-phase the PEN detector output has no meaning and
+     * latching a fault from it would take the unit out of service for nothing.
+     */
+    if (s_earthing == EVSE_EARTH_TN_C_S) {
+        s_faults |= EVSE_FAULT_PEN;
+    }
+}
+
 /* ------------------------------------------------------------------ */
 /* Input helpers                                                      */
 /* ------------------------------------------------------------------ */

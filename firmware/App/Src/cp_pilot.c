@@ -121,9 +121,14 @@ uint16_t cp_median_u16(uint16_t *buf, size_t n)
 extern ADC_HandleTypeDef  hadc1;
 extern TIM_HandleTypeDef  htim1;
 
-/** DMA target for the regular (high plateau) group. Circular. */
+/*
+ * Both sample rings are filled from conversion-complete interrupts rather than
+ * by DMA. At 1 kHz that is 2000 interrupts per second for the pair, which costs
+ * a few microseconds of a 250 MHz M33 and saves configuring a GPDMA channel
+ * whose only job would be to move one half-word per millisecond.
+ */
 static volatile uint16_t s_hi_samples[CP_SAMPLE_DEPTH];
-/** Filled by the injected-conversion ISR. */
+static volatile uint32_t s_hi_write_idx;
 static volatile uint16_t s_lo_samples[CP_SAMPLE_DEPTH];
 static volatile uint32_t s_lo_write_idx;
 static volatile uint16_t s_pp_raw;
@@ -217,11 +222,17 @@ bool cp_pilot_init(void)
 
     if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET,
                                     ADC_SINGLE_ENDED) != HAL_OK)      return false;
-    if (HAL_ADC_Start_DMA(&hadc1, (uint32_t *)s_hi_samples,
-                          CP_SAMPLE_DEPTH) != HAL_OK)                 return false;
+    if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)                           return false;
     if (HAL_ADCEx_InjectedStart_IT(&hadc1) != HAL_OK)                 return false;
 
     return true;
+}
+
+void cp_pilot_regular_isr(uint16_t cp_high)
+{
+    uint32_t i = s_hi_write_idx;
+    s_hi_samples[i] = cp_high;
+    s_hi_write_idx = (i + 1u) % CP_SAMPLE_DEPTH;
 }
 
 void cp_pilot_injected_isr(uint16_t cp_low, uint16_t pp)
@@ -282,9 +293,10 @@ void cp_pilot_update(void)
     uint16_t lo_copy[CP_SAMPLE_DEPTH];
 
     /*
-     * The DMA and the injected ISR write these rings concurrently. A torn read
-     * would at worst mix samples from adjacent periods, and the median filter
-     * absorbs that, so a plain copy is sufficient — no need to stall the DMA.
+     * The conversion ISRs write these rings while we read them. A torn read
+     * mixes samples from adjacent pilot periods at worst, which the median
+     * filter absorbs, so a plain copy is sufficient and no interrupt needs to
+     * be masked on the 10 ms path.
      */
     for (size_t i = 0; i < CP_SAMPLE_DEPTH; i++) {
         hi_copy[i] = s_hi_samples[i];

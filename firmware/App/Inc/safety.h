@@ -79,9 +79,11 @@ float safety_thermal_derate(void);
 /** Latest temperatures in degrees Celsius. Either pointer may be NULL. */
 void safety_get_temps(int16_t *connector_c, int16_t *internal_c);
 
-/** EXTI callback hook for the RCD trip line. Opens the contactor immediately. */
+/** EXTI hook for the RCD trip line. Opens the contactor immediately. */
 void safety_rcd_isr(void);
-/** EXTI callback hook for the emergency-off button. */
+/** EXTI hook for the emergency-off button. Opens the contactor immediately. */
 void safety_estop_isr(void);
+/** EXTI hook for the open-PEN detector. Opens the contactor immediately. */
+void safety_pen_isr(void);
 
 #endif /* SAFETY_H */

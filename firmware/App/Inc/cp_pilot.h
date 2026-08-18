@@ -9,9 +9,9 @@
  *
  * Sampling is synchronous with the PWM. ADC1 carries two groups:
  *
- *   regular  (DMA, circular)  <- TIM1_CH2, 75 % into the HIGH plateau
- *   injected (interrupt)      <- TIM1_CH4, 75 % into the LOW plateau
- *                                rank 1 = CP, rank 2 = PP
+ *   regular  (interrupt)  <- TIM1_CH2, 75 % into the HIGH plateau
+ *   injected (interrupt)  <- TIM1_CH4, 75 % into the LOW plateau
+ *                            rank 1 = CP, rank 2 = PP
  *
  * Sampling late in each plateau lets the CP network settle after the edge, and
  * both plateaus are median filtered over CP_SAMPLE_DEPTH periods before a
@@ -139,6 +139,9 @@ void cp_pilot_update(void);
 
 /** Latest debounced pilot status. Safe to call from any task. */
 void cp_pilot_get(cp_status_t *out);
+
+/** ISR hook for the regular-conversion complete callback (CP high plateau). */
+void cp_pilot_regular_isr(uint16_t cp_high);
 
 /**
  * ISR hook for the injected-conversion complete callback.

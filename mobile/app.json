@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "EVREST",
+    "slug": "evrest",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "evrest",
+    "userInterfaceStyle": "automatic",
+    "splash": { "resizeMode": "contain", "backgroundColor": "#0d0d0d" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.evrest.app" },
+    "android": {
+      "package": "com.evrest.app",
+      "adaptiveIcon": { "backgroundColor": "#0d0d0d" }
+    },
+    "extra": {
+      "//": "Point this at your CSMS API. Overridden at runtime from Settings.",
+      "apiBaseUrl": "http://10.0.2.2:9221"
+    }
+  }
+}

@@ -35,6 +35,8 @@ run: $(BINS)
 	@fail=0; for t in $(BINS); do ./$$t || fail=1; echo; done; exit $$fail
 
 # Compile-check every application source against the HAL and FreeRTOS stubs.
+# _DEFAULT_SOURCE because -std=c11 sets __STRICT_ANSI__, which hides POSIX
+# symbols such as S_IFCHR on glibc; newlib on the target exposes them anyway.
 # This does not link a firmware image -- it catches type errors, missing
 # declarations and HAL misuse without needing the CubeMX tree on the host.
 APP_SRCS := $(wildcard ../App/Src/*.c)
@@ -42,7 +44,7 @@ APP_SRCS := $(wildcard ../App/Src/*.c)
 .PHONY: check
 check:
 	@fail=0; for f in $(APP_SRCS); do \
-	  $(CC) $(CFLAGS) -DEVSE_COMPILE_CHECK=1 -fsyntax-only $$f || fail=1; \
+	  $(CC) $(CFLAGS) -D_DEFAULT_SOURCE -DEVSE_COMPILE_CHECK=1 -fsyntax-only $$f || fail=1; \
 	done; \
 	if [ $$fail -eq 0 ]; then echo "compile-check: all sources OK"; fi; \
 	exit $$fail
